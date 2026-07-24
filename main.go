@@ -1,19 +1,14 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-    "log"
-	_ "modernc.org/sqlite"
+	"github.com/glawscorp/glawscord/server"
 	"net/http"
-	"strings"
-    // "time"
 )
 
-
-
 func main() {
-    log.SetFlags(log.LstdFlags|log.Lshortfile)
-	initDB()
-	serverHelloWorld()
+	r := server.InitServer()
+	fmt.Println("listening on port 8080")
+	http.ListenAndServe(":8080", r)
+
 }
