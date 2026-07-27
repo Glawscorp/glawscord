@@ -27,8 +27,8 @@ func validUsername(username string) bool {
 }
 
 func validPassword(password string) bool {
-	var containsUpper bool
-	var containsLower bool
+	containsUpper := false
+	containsLower := false
 
 	for _, c := range password {
 		if !strings.ContainsRune(validChars, c) {
@@ -100,14 +100,14 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if u != "" {
-		fmt.Fprintln(w, username+"already exists")
+		fmt.Fprintln(w, username+" already exists")
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
 	password := q.Get("password")
 
-	if !validPassword("password") {
+	if !validPassword(password) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "password is invalid")
 		return

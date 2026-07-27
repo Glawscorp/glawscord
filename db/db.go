@@ -47,14 +47,18 @@ func GetUsers() ([]string, error) {
 func GetUserByName(username string) (string, error) {
 	db := getDB()
 	q := fmt.Sprintf(`SELECT * FROM users WHERE username = '%s'`, username)
-	fmt.Println(q)
 	r, err := db.Query(q)
 	if err != nil {
 		return "", err
 	}
 	u := ""
+	i := ""
+	p := ""
+
 	for r.Next() {
-		err = r.Scan(&u)
+		//Something was wrong with this Scan() call. Scan needs the same number of destination args as there are columns in the row that is being scanned in (3 in this case: username, password, and id)
+		//originally we had just u, but adding variables for the other 2 columns seems to have fixed the problem.
+		err = r.Scan(&u, &i, &p)
 		if err != nil {
 			return "", err
 		}
