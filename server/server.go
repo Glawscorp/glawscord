@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/glawscorp/glawscord/db"
 	"github.com/go-chi/chi/v5"
@@ -83,43 +84,56 @@ func InitServer() *chi.Mux {
 	return r
 }
 
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func createUser(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	username := q.Get("username")
-	if !validUsername(username) {
+	defer r.Body.Close()
+
+	var u User
+
+	err := json.NewDecoder(r.Body).Decode(&u)
+
+	if err != nil {
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	if !validUsername(u.Username) {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "username"+username+" contains invalid chars")
+		fmt.Fprintln(w, "username"+u.Username+" contains invalid chars")
 		return
 
 	}
 
-	u, err := db.GetUserByName(username)
+	exists, err := db.GetUserByName(u.Username)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Println(err.Error())
 		return
 	}
-	if u != "" {
-		fmt.Fprintln(w, username+" already exists")
+	if exists != "" {
+		fmt.Fprintln(w, u.Username+" already exists")
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
-	password := q.Get("password")
-
-	if !validPassword(password) {
+	if !validPassword(u.Password) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "password is invalid")
 		return
 	}
 
-	err = db.CreateUser(username, password)
+	err = db.CreateUser(u.Username, u.Password)
 
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
-	success := "successfully created user: " + username
+	success := "successfully created user: " + u.Username
 	fmt.Fprintln(w, success)
 
 }
