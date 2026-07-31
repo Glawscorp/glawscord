@@ -19,7 +19,7 @@ func validUsername(username string) bool {
 			return false
 		}
 	}
-	if (utf8.RuneCountInString(username)) < 4 || (utf8.RuneCountInString(username)) > 17 {
+	if (utf8.RuneCountInString(username)) < 4 || (utf8.RuneCountInString(username)) > 25 {
 		return false
 	}
 
@@ -103,7 +103,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	if !validUsername(u.Username) {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "username"+u.Username+" contains invalid chars")
+		fmt.Fprintln(w, "username "+u.Username+" contains invalid chars")
 		return
 
 	}
