@@ -69,8 +69,9 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
-	content := strings.Join(users, "\n")
-	fmt.Fprintln(w, content)
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(users)
 }
 
 func InitServer() *chi.Mux {
@@ -84,15 +85,10 @@ func InitServer() *chi.Mux {
 	return r
 }
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 func createUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var u User
+	var u db.User
 
 	err := json.NewDecoder(r.Body).Decode(&u)
 
@@ -115,7 +111,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err.Error())
 		return
 	}
-	if exists != "" {
+	if exists != nil {
 		fmt.Fprintln(w, u.Username+" already exists")
 		w.WriteHeader(http.StatusConflict)
 		return

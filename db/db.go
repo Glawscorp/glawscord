@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"github.com/glawscorp/glawscord/structs"
 	_ "modernc.org/sqlite"
 )
 
@@ -44,26 +45,23 @@ func GetUsers() ([]string, error) {
 	return result, nil
 }
 
-func GetUserByName(username string) (string, error) {
+func GetUserByName(username string) (*structs.User, error) {
 	db := getDB()
 	q := fmt.Sprintf(`SELECT * FROM users WHERE username = '%s'`, username)
 	r, err := db.Query(q)
+	var u structs.User
+
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	u := ""
-	i := ""
-	p := ""
 
 	for r.Next() {
-		//Something was wrong with this Scan() call. Scan needs the same number of destination args as there are columns in the row that is being scanned in (3 in this case: username, password, and id)
-		//originally we had just u, but adding variables for the other 2 columns seems to have fixed the problem.
-		err = r.Scan(&u, &i, &p)
+		err = r.Scan(&u)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
-	return u, nil
+	return &u, nil
 }
 
 func CreateUser(username string, password string) error {
