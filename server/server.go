@@ -81,12 +81,60 @@ func InitServer() *chi.Mux {
 		r.Get("/", getUsers)
 
 	})
+	r.Route("/users/{ID}/messages", func(r chi.Router) {
+		r.Post("/", sendUserMessage)
+		r.Get("/", getUserMessages)
+
+	})
 
 	return r
 }
 
+func sendUserMessage(w http.ResponseWriter, r *http.Request) {
+	var m db.UserMessage
+
+	err := json.NewDecoder(r.Body).Decode(&m)
+
+	if err != nil {
+		fmt.Fprintln(w, err)
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	err = db.CreateUserMessage(m.Sender, m.Receiver, m.Content)
+	fmt.Println(err)
+
+}
+
+func getUserMessages(w http.ResponseWriter, r *http.Request) {
+	var msgs []*db.UserMessage
+	var req db.GetMessages
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	fmt.Printf("decoded:%v ", req)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+
+	}
+	msgs, err = db.GetUserMessages(req.Sender, req.Receiver, req.Limit, req.Offset)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+	fmt.Println(msgs)
+}
+
+//This func needs to recieve some json
+//decode it into sender, receiver, limit, offset
+//pass this info into the db.GetUserMessages func
+//db.GetUserMessages will return a slice containing the 10 most recent messages between sender and reciever
+//Capture the returned messages in a variable
+//encode that back into json to go back to client
+
 func createUser(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 
 	var u db.User
 
