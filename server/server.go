@@ -6,6 +6,7 @@ import (
 	"github.com/glawscorp/glawscord/db"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -108,31 +109,56 @@ func sendUserMessage(w http.ResponseWriter, r *http.Request) {
 
 func getUserMessages(w http.ResponseWriter, r *http.Request) {
 	var msgs []*db.UserMessage
-	var req db.GetMessages
+	q := r.URL.Query()
 
-	err := json.NewDecoder(r.Body).Decode(&req)
-	fmt.Printf("decoded:%v ", req)
-	if err != nil {
-		fmt.Fprintln(w, err)
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
-		return
+	sender := q.Get("sender_id")
+	receiver := q.Get("receiver_id")
+	limit := q.Get("limit")
+	offset := q.Get("offset")
 
-	}
-	msgs, err = db.GetUserMessages(req.Sender, req.Receiver, req.Limit, req.Offset)
+	s, err := strconv.Atoi(sender)
 	if err != nil {
-		fmt.Fprintln(w, err)
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("invlaid sender_id '%s'", sender), http.StatusBadRequest)
 		return
 	}
-	fmt.Println(msgs)
+
+	rec, err := strconv.Atoi(receiver)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invlaid receiver_id '%s'", receiver), http.StatusBadRequest)
+		return
+	}
+
+	if limit == "" || limit == "0" {
+		limit = "10"
+	}
+	l, err := strconv.Atoi(limit)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invlaid limit '%s'", limit), http.StatusBadRequest)
+		return
+	}
+	if offset == "" {
+		offset = "0"
+	}
+
+	o, err := strconv.Atoi(offset)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invlaid offset '%s'", offset), http.StatusBadRequest)
+		return
+	}
+
+	msgs, err = db.GetUserMessages(s, rec, l, o)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "made it to db func call", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(msgs)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
-
-//This func needs to recieve some json
-//decode it into sender, receiver, limit, offset
-//pass this info into the db.GetUserMessages func
-//db.GetUserMessages will return a slice containing the 10 most recent messages between sender and reciever
-//Capture the returned messages in a variable
-//encode that back into json to go back to client
 
 func createUser(w http.ResponseWriter, r *http.Request) {
 

@@ -75,9 +75,10 @@ func CreateUserMessage(sender int, receiver int, content string) error {
 }
 
 func GetUserMessages(sender, receiver, limit, offset int) ([]*UserMessage, error) {
-	//add a bunch of prints, something is breaking here and causing: missing argument with index 1
 	db := getDB()
-	rows, err := db.Query(getUserMessages)
+
+	rows, err := db.Query(getUserMessages, sender, receiver, limit, offset)
+
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +91,10 @@ func GetUserMessages(sender, receiver, limit, offset int) ([]*UserMessage, error
 			return nil, err
 		}
 		result = append(result, &m)
+	}
+	//add this check everywhere we loop over queried rows
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
