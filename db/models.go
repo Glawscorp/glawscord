@@ -18,10 +18,3 @@ type UserMessage struct {
 	SentAt   time.Time `json:"sent_at"`
 	Content  string    `json:"content"`
 }
-
-type GetMessages struct {
-	Sender   int `json:"sender"`
-	Receiver int `json:"receiver"`
-	Limit    int `json:"limit"`
-	Offset   int `json:"offset"`
-}
