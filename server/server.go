@@ -6,6 +6,7 @@ import (
 	"github.com/glawscorp/glawscord/db"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -63,36 +64,38 @@ func validPassword(password string) bool {
 
 }
 
-func getUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := db.GetUsers()
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-		return
-	}
-	content := strings.Join(users, "\n")
-	fmt.Fprintln(w, content)
-}
-
 func InitServer() *chi.Mux {
 	r := chi.NewRouter()
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/", createUser)
 		r.Get("/", getUsers)
+		r.Patch("/", updateUsername)
+		//		r.Delete("/", deleteUser)
+	})
+	r.Route("/users/{ID}/messages", func(r chi.Router) {
+		r.Post("/", sendUserMessage)
+		r.Get("/", getUserMessages)
 
 	})
 
 	return r
 }
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+// User related CRUD
+func getUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := db.GetUsers()
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(users)
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 
-	var u User
+	var u db.User
 
 	err := json.NewDecoder(r.Body).Decode(&u)
 
@@ -115,7 +118,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err.Error())
 		return
 	}
-	if exists != "" {
+	if exists != nil {
 		fmt.Fprintln(w, u.Username+" already exists")
 		w.WriteHeader(http.StatusConflict)
 		return
@@ -136,4 +139,119 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	success := "successfully created user: " + u.Username
 	fmt.Fprintln(w, success)
 
+}
+
+func updateUsername(w http.ResponseWriter, r *http.Request) {
+	var up UpdateUsername
+	err := json.NewDecoder(r.Body).Decode(&up)
+
+	if err != nil {
+		fmt.Fprintln(w, err)
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	username := up.Username
+	new_name := up.NewName
+
+	if !validUsername(new_name) {
+		fmt.Fprintln(w, "new username: "+new_name+" is invalid")
+		return
+	}
+
+	exists, err := db.GetUserByName(new_name)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(err.Error())
+		return
+	}
+	if exists != nil {
+		fmt.Fprintln(w, "user with username: "+new_name+" already exists")
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	err = db.UpdateUsername(username, new_name)
+
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	fmt.Fprint(w, "username updated")
+}
+
+// Messages CRUD
+func sendUserMessage(w http.ResponseWriter, r *http.Request) {
+	var m db.UserMessage
+
+	err := json.NewDecoder(r.Body).Decode(&m)
+
+	if err != nil {
+		fmt.Fprintln(w, err)
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	if m.Content == "" {
+		http.Error(w, "cannot send empty message", http.StatusBadRequest)
+		return
+	}
+
+	err = db.CreateUserMessage(m.Sender, m.Receiver, m.Content)
+	fmt.Println(err)
+
+}
+
+func getUserMessages(w http.ResponseWriter, r *http.Request) {
+	var msgs []*db.UserMessage
+	q := r.URL.Query()
+
+	sender := q.Get("sender_id")
+	receiver := q.Get("receiver_id")
+	limit := q.Get("limit")
+	offset := q.Get("offset")
+
+	s, err := strconv.Atoi(sender)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invlaid sender_id '%s'", sender), http.StatusBadRequest)
+		return
+	}
+
+	rec, err := strconv.Atoi(receiver)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invlaid receiver_id '%s'", receiver), http.StatusBadRequest)
+		return
+	}
+
+	if limit == "" || limit == "0" {
+		limit = "10"
+	}
+	l, err := strconv.Atoi(limit)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invlaid limit '%s'", limit), http.StatusBadRequest)
+		return
+	}
+	if offset == "" {
+		offset = "0"
+	}
+
+	o, err := strconv.Atoi(offset)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invlaid offset '%s'", offset), http.StatusBadRequest)
+		return
+	}
+
+	msgs, err = db.GetUserMessages(s, rec, l, o)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "made it to db func call", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(msgs)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

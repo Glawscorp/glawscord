@@ -6,11 +6,53 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+var createUsersTableQuery = `
+CREATE TABLE IF NOT EXISTS users (
+	id INTEGER PRIMARY KEY, 
+	username TEXT,
+	password TEXT,
+	joined_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`
+
+var createUserMessagesTableQuery = `
+CREATE TABLE IF NOT EXISTS user_messages (
+	id INTEGER PRIMARY KEY,
+	sender INT,
+	receiver INT,
+	sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	content TEXT
+)`
+
+var createUserMessage = `
+INSERT INTO user_messages (
+	sender,
+	receiver,
+	content
+) VALUES (
+	?,
+	?,
+	?
+)`
+
+var getUserMessages = `
+SELECT * FROM user_messages WHERE sender = ? AND receiver = ? ORDER BY sent_at LIMIT ? OFFSET ? 
+`
+var updateUsername = `
+UPDATE users SET username = ? WHERE username = ?
+`
+
 func init() {
 	db := getDB()
 	defer db.Close()
 
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)`)
+	_, err := db.Exec(createUsersTableQuery)
+
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Exec(createUserMessagesTableQuery)
+
 	if err != nil {
 		panic(err)
 	}
@@ -24,6 +66,40 @@ func getDB() *sql.DB {
 		panic(err)
 	}
 	return db
+}
+
+func CreateUserMessage(sender int, receiver int, content string) error {
+	db := getDB()
+	_, err := db.Exec(createUserMessage, sender, receiver, content)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetUserMessages(sender, receiver, limit, offset int) ([]*UserMessage, error) {
+	db := getDB()
+
+	rows, err := db.Query(getUserMessages, sender, receiver, limit, offset)
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := []*UserMessage{}
+	for rows.Next() {
+		var m UserMessage
+		err := rows.Scan(&m.ID, &m.Sender, &m.Receiver, &m.SentAt, &m.Content)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &m)
+	}
+	//add this check everywhere we loop over queried rows
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func GetUsers() ([]string, error) {
@@ -44,26 +120,19 @@ func GetUsers() ([]string, error) {
 	return result, nil
 }
 
-func GetUserByName(username string) (string, error) {
+func GetUserByName(username string) (*User, error) {
+	var u User
 	db := getDB()
 	q := fmt.Sprintf(`SELECT * FROM users WHERE username = '%s'`, username)
-	r, err := db.Query(q)
-	if err != nil {
-		return "", err
-	}
-	u := ""
-	i := ""
-	p := ""
-
-	for r.Next() {
-		//Something was wrong with this Scan() call. Scan needs the same number of destination args as there are columns in the row that is being scanned in (3 in this case: username, password, and id)
-		//originally we had just u, but adding variables for the other 2 columns seems to have fixed the problem.
-		err = r.Scan(&u, &i, &p)
-		if err != nil {
-			return "", err
+	if err := db.QueryRow(q).Scan(&u.ID, &u.Username, &u.Password, &u.JoinedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			return nil, err
 		}
 	}
-	return u, nil
+
+	return &u, nil
 }
 
 func CreateUser(username string, password string) error {
@@ -74,6 +143,25 @@ func CreateUser(username string, password string) error {
 	query := fmt.Sprintf(`INSERT INTO users (username, password) VALUES('%s','%s')`, username, password)
 
 	_, err := db.Exec(query)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateUsername(username string, new_name string) error {
+	db := getDB()
+
+	_, err := GetUserByName(username)
+
+	if err != nil {
+		fmt.Println("no user found with the given username")
+		return err
+	}
+
+	_, err = db.Exec(updateUsername, new_name, username)
 
 	if err != nil {
 		return err
