@@ -41,6 +41,14 @@ var updateUsername = `
 UPDATE users SET username = ? WHERE username = ?
 `
 
+var deleteUser = `
+DELETE FROM users WHERE id = ?
+`
+
+var getUserByID = `
+SELECT * FROM users WHERE id = ?
+`
+
 func init() {
 	db := getDB()
 	defer db.Close()
@@ -168,4 +176,40 @@ func UpdateUsername(username string, new_name string) error {
 	}
 
 	return nil
+}
+
+func DeleteUser(id int) error {
+
+	db := getDB()
+
+	_, err := GetUserByID(id)
+
+	if err != nil {
+		fmt.Println("no user found with the given id")
+		return err
+	}
+
+	_, err = db.Exec(deleteUser, id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func GetUserByID(id int) (*User, error) {
+	db := getDB()
+
+	var u User
+	if err := db.QueryRow(getUserByID, id).Scan(&u.ID, &u.Username, &u.Password, &u.JoinedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &u, nil
+
 }
