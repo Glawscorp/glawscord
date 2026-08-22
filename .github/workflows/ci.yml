@@ -1,4 +1,4 @@
-name: ci and cd
+name: CI
 on:
     push:
         branches: [ '**' ]
