@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-        r := server.InitServer()
+	r := server.InitServer()
 	fmt.Println("listening on port 8080")
 	http.ListenAndServe(":8080", r)
 

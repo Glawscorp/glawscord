@@ -16,10 +16,9 @@ jobs:
             - name: Check formatting
               run: |
                 if [ -n "$(gofmt -l .)" ]; then
-                  echo "The following are not properly formatted:"
+                  echo "The following files are not properly formatted:"
                   gofmt -l .
                   exit 1
-                else
-                  echo "Looks good."
                 fi
+                echo "Looks good."
 
