@@ -1,0 +1,23 @@
+name: ci and cd
+on:
+    push:
+        branches: [ '**' ]
+
+jobs:
+    format:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Clone Repo
+              uses: actions/checkout@v4
+            - name: Install Go 3.11
+              uses: actions/setup-go@v7
+              with:
+                go-version: '1.25'
+            - name: Check formatting
+              run: |
+                if [ -n "$(gofmt -l .)" ]; then
+                  echo "The following are not properly formatted:"
+                  gofmt -l .
+                  exit 1
+                fi
+
