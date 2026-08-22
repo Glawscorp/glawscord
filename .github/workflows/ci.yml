@@ -12,8 +12,9 @@ jobs:
             - name: Install Go 1.25
               uses: actions/setup-go@v7
               with:
-                go-version: '1.25'
-            - name: Check formatting
+                go-version-file: 'go.mod'
+                cache: true
+            - name: Check Formatting
               run: |
                 if [ -n "$(gofmt -l .)" ]; then
                   echo "The following files are not properly formatted:"
@@ -21,4 +22,56 @@ jobs:
                   exit 1
                 fi
                 echo "Looks good."
+
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Clone Repo
+              uses: actions/checkout@v4
+            - name: Install Go 1.25
+              uses: actions/setup-go@v7
+              with:
+                go-version-file: 'go.mod'
+                cache: true
+            - name: Run GolangCI-Lint
+              uses: golangci/golangci-lint-action@v6
+              with:
+                version: latest
+
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Clone Repo
+              uses: actions/checkout@v4
+            - name: Install Go 1.25
+              uses: actions/setup-go@v7
+              with:
+                go-version-file: 'go.mod'
+                cache: true
+            - name: Run Tests and Enforce Coverage
+              run: |
+                # minimum acceptable coverage
+                THRESHOLD=80.0
+
+                # run tests and output coverage.out
+                go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+                # dump summary
+                echo "=== CODE COVERAGE SUMMARY ==="
+                go tool cover -func=coverage.out
+
+                # extract coverage
+                TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+')
+                echo "Current Total Coverage: ${TOTAL_COVERAGE}%"
+                echo "Required Minimum Coverage: ${THRESHOLD}%"
+
+                # compare using awk
+                COMPARE_RESULT=$(awk -v total="$TOTAL_COVERAGE" -v min="$THRESHOLD" 'BEGIN {print (total < min) ? "fail" : "pass"}')
+
+                if [ "$COMPARE_RESULT" = "fail" ]; then
+                  echo "❌ ERROR: Code coverage fell below the ${THRESHOLD}% threshold!"
+                  exit 1
+                else
+                  echo "✅ SUCCESS: Code coverage requirements met."
+                fi
 
