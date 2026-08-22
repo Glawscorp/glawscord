@@ -9,7 +9,7 @@ jobs:
         steps:
             - name: Clone Repo
               uses: actions/checkout@v4
-            - name: Install Go 3.11
+            - name: Install Go 1.25
               uses: actions/setup-go@v7
               with:
                 go-version: '1.25'
@@ -19,5 +19,7 @@ jobs:
                   echo "The following are not properly formatted:"
                   gofmt -l .
                   exit 1
+                else
+                  echo "Looks good."
                 fi
 
