@@ -48,9 +48,11 @@ DELETE FROM users WHERE id = ?
 var getUserByID = `
 SELECT * FROM users WHERE id = ?
 `
+var dbPath string
 
-func init() {
-	db := getDB()
+func InitDB(path string) {
+	dbPath = path
+	db := GetDB()
 	defer db.Close()
 
 	_, err := db.Exec(createUsersTableQuery)
@@ -67,9 +69,9 @@ func init() {
 
 }
 
-func getDB() *sql.DB {
+func GetDB() *sql.DB {
 
-	db, err := sql.Open("sqlite", "glawscord.db")
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +79,7 @@ func getDB() *sql.DB {
 }
 
 func CreateUserMessage(sender int, receiver int, content string) error {
-	db := getDB()
+	db := GetDB()
 	_, err := db.Exec(createUserMessage, sender, receiver, content)
 	if err != nil {
 		return err
@@ -86,7 +88,7 @@ func CreateUserMessage(sender int, receiver int, content string) error {
 }
 
 func GetUserMessages(sender, receiver, limit, offset int) ([]*UserMessage, error) {
-	db := getDB()
+	db := GetDB()
 
 	rows, err := db.Query(getUserMessages, sender, receiver, limit, offset)
 
@@ -111,7 +113,7 @@ func GetUserMessages(sender, receiver, limit, offset int) ([]*UserMessage, error
 }
 
 func GetUsers() ([]string, error) {
-	db := getDB()
+	db := GetDB()
 	r, err := db.Query(`SELECT username FROM users`)
 	if err != nil {
 		return nil, err
@@ -130,7 +132,7 @@ func GetUsers() ([]string, error) {
 
 func GetUserByName(username string) (*User, error) {
 	var u User
-	db := getDB()
+	db := GetDB()
 	q := fmt.Sprintf(`SELECT * FROM users WHERE username = '%s'`, username)
 	if err := db.QueryRow(q).Scan(&u.ID, &u.Username, &u.Password, &u.JoinedAt); err != nil {
 		if err == sql.ErrNoRows {
@@ -145,7 +147,7 @@ func GetUserByName(username string) (*User, error) {
 
 func CreateUser(username string, password string) error {
 
-	db := getDB()
+	db := GetDB()
 	defer db.Close()
 
 	query := fmt.Sprintf(`INSERT INTO users (username, password) VALUES('%s','%s')`, username, password)
@@ -160,7 +162,7 @@ func CreateUser(username string, password string) error {
 }
 
 func UpdateUsername(username string, new_name string) error {
-	db := getDB()
+	db := GetDB()
 
 	_, err := GetUserByName(username)
 
@@ -180,7 +182,7 @@ func UpdateUsername(username string, new_name string) error {
 
 func DeleteUser(id int) error {
 
-	db := getDB()
+	db := GetDB()
 
 	_, err := GetUserByID(id)
 
@@ -200,7 +202,7 @@ func DeleteUser(id int) error {
 }
 
 func GetUserByID(id int) (*User, error) {
-	db := getDB()
+	db := GetDB()
 
 	var u User
 	if err := db.QueryRow(getUserByID, id).Scan(&u.ID, &u.Username, &u.Password, &u.JoinedAt); err != nil {

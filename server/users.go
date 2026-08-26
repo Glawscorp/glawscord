@@ -28,6 +28,11 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(users)
+
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
