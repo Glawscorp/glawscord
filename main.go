@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/glawscorp/glawscord/db"
 	"github.com/glawscorp/glawscord/server"
@@ -8,7 +9,11 @@ import (
 )
 
 func main() {
-	err := db.InitDB("~/Workspace/glawscord/glawscord.db")
+	dbPath := flag.String("db-path", "./glawscord.db", "the path to the database file")
+
+	flag.Parse()
+
+	err := db.InitDB(*dbPath)
 	if err != nil {
 		fmt.Println(err)
 	}
