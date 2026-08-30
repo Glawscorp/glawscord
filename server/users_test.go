@@ -9,7 +9,9 @@ import (
 )
 
 func setup(t *testing.T) string {
-	dbPath, err := os.CreateTemp("/tmp/glawscord/", "test-*.db")
+	tmpdir := "/tmp/glawscord/"
+	os.Mkdir(tmpdir, 0755)
+	dbPath, err := os.CreateTemp(tmpdir, "test-*.db")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -50,10 +50,16 @@ SELECT * FROM users WHERE id = ?
 `
 var dbPath string
 
-func InitDB(path string) {
+func InitDB(path string) error {
 	dbPath = path
 	db := GetDB()
-	defer db.Close()
+	defer func() error {
+		err := db.Close()
+		if err != nil {
+			return err
+		}
+		return err
+	}()
 
 	_, err := db.Exec(createUsersTableQuery)
 
@@ -67,6 +73,7 @@ func InitDB(path string) {
 		panic(err)
 	}
 
+	return err
 }
 
 func GetDB() *sql.DB {
