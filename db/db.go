@@ -53,15 +53,15 @@ var dbPath string
 func InitDB(path string) error {
 	dbPath = path
 	db := GetDB()
-	defer func() error {
+	defer func() {
 		err := db.Close()
 		if err != nil {
-			return err
+			fmt.Printf("error closing database: %v\n", err)
 		}
-		return err
 	}()
 
 	_, err := db.Exec(createUsersTableQuery)
+	fmt.Printf("issue creating users table: %v\n", err)
 
 	if err != nil {
 		panic(err)
@@ -155,6 +155,7 @@ func GetUserByName(username string) (*User, error) {
 func CreateUser(username string, password string) error {
 
 	db := GetDB()
+	//nolint:errcheck
 	defer db.Close()
 
 	query := fmt.Sprintf(`INSERT INTO users (username, password) VALUES('%s','%s')`, username, password)

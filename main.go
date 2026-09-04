@@ -20,6 +20,9 @@ func main() {
 
 	r := server.InitServer()
 	fmt.Println("listening on port 8080")
-	http.ListenAndServe(":8080", r)
+	err = http.ListenAndServe(":8080", r)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 }

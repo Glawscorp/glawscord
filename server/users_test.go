@@ -10,21 +10,38 @@ import (
 
 func setup(t *testing.T) string {
 	tmpdir := "/tmp/glawscord/"
-	os.Mkdir(tmpdir, 0755)
+	err := os.Mkdir(tmpdir, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dbPath, err := os.CreateTemp(tmpdir, "test-*.db")
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	//nolint:errcheck
 	dbPath.Close()
-	db.InitDB(dbPath.Name())
-	db.CreateUser("user1", "2Cornishhens")
-	db.CreateUser("user2", "AndSomeWater")
+	err = db.InitDB(dbPath.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.CreateUser("user1", "2Cornishhens")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.CreateUser("user2", "AndSomeWater")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	return dbPath.Name()
 }
 
 func TestGetUsers(t *testing.T) {
 	dbPath := setup(t)
+	//nolint:errcheck
 	defer os.Remove(dbPath)
 
 	r := InitServer()

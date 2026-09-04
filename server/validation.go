@@ -51,7 +51,7 @@ func validPassword(password string) bool {
 		}
 	}
 
-	if containsUpper == false || containsLower == false {
+	if !containsUpper || !containsLower {
 		return false
 	}
 	return true
