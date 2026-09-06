@@ -22,12 +22,19 @@ func userRoutes(r chi.Router) {
 func getUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := db.GetUsers()
 	if err != nil {
-		fmt.Fprintln(w, err.Error())
+		fmt.Printf("failed to retrieve users: %v\n", err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(users)
+
+	if err != nil {
+		fmt.Printf("failed to send payload to client: %v\n", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +49,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !validUsername(u.Username) {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "username "+u.Username+" contains invalid chars")
+		http.Error(w, "username is invalid", http.StatusBadRequest)
 		return
 
 	}
@@ -56,25 +62,24 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if exists != nil {
-		fmt.Fprintln(w, u.Username+" already exists")
-		w.WriteHeader(http.StatusConflict)
+		http.Error(w, "username already exists", http.StatusConflict)
 		return
 	}
 
 	if !validPassword(u.Password) {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "password is invalid")
+		http.Error(w, "invalid password", http.StatusBadRequest)
 		return
 	}
 
 	err = db.CreateUser(u.Username, u.Password)
 
 	if err != nil {
-		fmt.Fprintln(w, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(err.Error())
 		return
 	}
 	success := "successfully created user: " + u.Username
-	fmt.Fprintln(w, success)
+	_, _ = fmt.Fprintln(w, success)
 
 }
 
@@ -83,8 +88,8 @@ func updateUsername(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&up)
 
 	if err != nil {
-		fmt.Fprintln(w, err)
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		fmt.Println(err)
 		return
 	}
 
@@ -92,7 +97,7 @@ func updateUsername(w http.ResponseWriter, r *http.Request) {
 	new_name := up.NewName
 
 	if !validUsername(new_name) {
-		fmt.Fprintln(w, "new username: "+new_name+" is invalid")
+		http.Error(w, "invalid username", http.StatusBadRequest)
 		return
 	}
 
@@ -100,22 +105,25 @@ func updateUsername(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		return
 	}
 	if exists != nil {
-		fmt.Fprintln(w, "user with username: "+new_name+" already exists")
-		w.WriteHeader(http.StatusConflict)
+		http.Error(w, "user with that username already exists", http.StatusConflict)
 		return
 	}
 
 	err = db.UpdateUsername(username, new_name)
-
 	if err != nil {
-		fmt.Fprintln(w, err)
+		http.Error(w, "unable to update username", http.StatusInternalServerError)
+		fmt.Println(err)
 		return
 	}
-	fmt.Fprint(w, "username updated")
+
+	_, err = fmt.Fprint(w, "username updated")
+	if err != nil {
+		fmt.Printf("failed to send response payload: %v\n", err)
+	}
 }
 
 func deleteUser(w http.ResponseWriter, r *http.Request) {
@@ -123,17 +131,17 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	user_id, err := strconv.Atoi(chi.URLParam(r, "ID"))
 
 	if err != nil {
-		fmt.Fprintln(w, "couldn't get user id from url")
+		http.Error(w, "couldn't get user id from url", http.StatusBadRequest)
 		return
 	}
 
 	err = db.DeleteUser(user_id)
 	if err != nil {
-		fmt.Fprintln(w, err)
+		http.Error(w, "issue deleting user", http.StatusInternalServerError)
+		fmt.Println(err)
 		return
 	}
 
-	fmt.Fprintln(w, "user deleted")
-	return
+	_, _ = fmt.Fprintln(w, "user deleted")
 
 }
