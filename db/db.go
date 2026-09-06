@@ -61,7 +61,10 @@ func InitDB(path string) error {
 	}()
 
 	_, err := db.Exec(createUsersTableQuery)
-	fmt.Printf("issue creating users table: %v\n", err)
+
+	if err != nil {
+		fmt.Printf("issue creating users table: %v\n", err)
+	}
 
 	if err != nil {
 		panic(err)
