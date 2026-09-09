@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func setup(t *testing.T) string {
+func Setup(t *testing.T) string {
 	tmpdir := "/tmp/glawscord/"
 	err := os.MkdirAll(tmpdir, 0755)
 	if err != nil {
@@ -41,7 +41,7 @@ func setup(t *testing.T) string {
 }
 
 func TestGetUsers(t *testing.T) {
-	dbPath := setup(t)
+	dbPath := Setup(t)
 	//nolint:errcheck
 	defer os.Remove(dbPath)
 
@@ -63,7 +63,7 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	dbPath := setup(t)
+	dbPath := Setup(t)
 	//nolint:errcheck
 	defer os.Remove(dbPath)
 
@@ -116,7 +116,7 @@ func TestCreateUser(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 
-	dbPath := setup(t)
+	dbPath := Setup(t)
 	//nolint:errcheck
 	defer os.Remove(dbPath)
 

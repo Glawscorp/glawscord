@@ -13,7 +13,6 @@ func userRoutes(r chi.Router) {
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/", createUser)
 		r.Get("/", getUsers)
-		r.Patch("/", updateUsername)
 		r.Delete("/{ID}", deleteUser)
 	})
 
@@ -81,49 +80,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	success := "successfully created user: " + u.Username
 	_, _ = fmt.Fprintln(w, success)
 
-}
-
-func updateUsername(w http.ResponseWriter, r *http.Request) {
-	var up UpdateUsername
-	err := json.NewDecoder(r.Body).Decode(&up)
-
-	if err != nil {
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
-		fmt.Println(err)
-		return
-	}
-
-	username := up.Username
-	new_name := up.NewName
-
-	if !validUsername(new_name) {
-		http.Error(w, "invalid username", http.StatusBadRequest)
-		return
-	}
-
-	exists, err := db.GetUserByName(new_name)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println(err)
-		return
-	}
-	if exists != nil {
-		http.Error(w, "user with that username already exists", http.StatusConflict)
-		return
-	}
-
-	err = db.UpdateUsername(username, new_name)
-	if err != nil {
-		http.Error(w, "unable to update username", http.StatusInternalServerError)
-		fmt.Println(err)
-		return
-	}
-
-	_, err = fmt.Fprint(w, "username updated")
-	if err != nil {
-		fmt.Printf("failed to send response payload: %v\n", err)
-	}
 }
 
 func deleteUser(w http.ResponseWriter, r *http.Request) {

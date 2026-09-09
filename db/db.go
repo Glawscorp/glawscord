@@ -35,10 +35,7 @@ INSERT INTO user_messages (
 )`
 
 var getUserMessages = `
-SELECT * FROM user_messages WHERE sender = ? AND receiver = ? ORDER BY sent_at LIMIT ? OFFSET ? 
-`
-var updateUsername = `
-UPDATE users SET username = ? WHERE username = ?
+SELECT * FROM user_messages WHERE sender IN (?,?) AND receiver IN (?,?) ORDER BY sent_at LIMIT ? OFFSET ? 
 `
 
 var deleteUser = `
@@ -100,7 +97,7 @@ func CreateUserMessage(sender int, receiver int, content string) error {
 func GetUserMessages(sender, receiver, limit, offset int) ([]*UserMessage, error) {
 	db := GetDB()
 
-	rows, err := db.Query(getUserMessages, sender, receiver, limit, offset)
+	rows, err := db.Query(getUserMessages, sender, receiver, sender, receiver, limit, offset)
 
 	if err != nil {
 		return nil, err
@@ -164,25 +161,6 @@ func CreateUser(username string, password string) error {
 	query := fmt.Sprintf(`INSERT INTO users (username, password) VALUES('%s','%s')`, username, password)
 
 	_, err := db.Exec(query)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func UpdateUsername(username string, new_name string) error {
-	db := GetDB()
-
-	_, err := GetUserByName(username)
-
-	if err != nil {
-		fmt.Println("no user found with the given username")
-		return err
-	}
-
-	_, err = db.Exec(updateUsername, new_name, username)
 
 	if err != nil {
 		return err
