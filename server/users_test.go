@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"github.com/glawscorp/glawscord/db"
 	"net/http"
 	"net/http/httptest"
@@ -46,6 +47,7 @@ func TestGetUsers(t *testing.T) {
 	defer os.Remove(dbPath)
 
 	r := InitServer()
+	users := []string{}
 
 	t.Run("returns all users in db", func(t *testing.T) {
 
@@ -53,9 +55,18 @@ func TestGetUsers(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		r.ServeHTTP(w, request)
+		err := json.NewDecoder(w.Body).Decode(&users)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+		}
+
+		if err != nil {
+			t.Errorf("unable to decode json response: %v\n", err)
+		}
+
+		if len(users) != 2 {
+			t.Error("returned unexpected number of users")
 		}
 
 	})
@@ -112,6 +123,19 @@ func TestCreateUser(t *testing.T) {
 
 	})
 
+	t.Run("tries to create user with invalid json payload", func(t *testing.T) {
+
+		body := `{extra_param1983598,iowuawueg0p94htq;olwkdf, "Username": "Dookie_nuggs", "Password":"Test_Password123-"}`
+		request := httptest.NewRequest(http.MethodPost, "/users", strings.NewReader(body))
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+		}
+	})
+
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -134,18 +158,18 @@ func TestDeleteUser(t *testing.T) {
 		}
 
 	})
-	//tries to delete non-existing user. for some reason this is returning 200
-	/*t.Run("tries to delete user that doesn't exist", func(t *testing.T) {
+
+	t.Run("tries to delete user that doesn't exist", func(t *testing.T) {
 
 		request := httptest.NewRequest(http.MethodDelete, "/users/9999", nil)
 		w := httptest.NewRecorder()
 
 		r.ServeHTTP(w, request)
 
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+		if w.Code != http.StatusNotFound {
+			t.Errorf("got %d, want %d", w.Code, http.StatusNotFound)
 		}
 
-	})*/
+	})
 
 }

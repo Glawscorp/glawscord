@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -29,6 +30,7 @@ func TestGetMessages(t *testing.T) {
 	dbPath := Setup(t)
 	setupMessages(t)
 
+	//nolint:errcheck
 	defer os.Remove(dbPath)
 
 	r := InitServer()
@@ -67,6 +69,114 @@ func TestGetMessages(t *testing.T) {
 			return
 		}
 
+	})
+
+	t.Run("fails to get messages; non-integer limit", func(t *testing.T) {
+
+		request := httptest.NewRequest(http.MethodGet, "/users/{ID}/messages?sender_id=1&receiver_id=2&limit=1.75638369&offset=0", nil)
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+			return
+		}
+
+	})
+
+	t.Run("fails to get messages; invalid sender", func(t *testing.T) {
+
+		request := httptest.NewRequest(http.MethodGet, "/users/{ID}/messages?sender_id=poop&receiver_id=2&limit=10&offset=0", nil)
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+			return
+		}
+
+	})
+
+	t.Run("fails to get messages; invalid receiver", func(t *testing.T) {
+
+		request := httptest.NewRequest(http.MethodGet, "/users/{ID}/messages?sender_id=1&receiver_id=dook&limit=10&offset=0", nil)
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+			return
+		}
+
+	})
+
+	t.Run("fails to get messages; non-integer offset", func(t *testing.T) {
+
+		request := httptest.NewRequest(http.MethodGet, "/users/{ID}/messages?sender_id=1&receiver_id=2&limit=10&offset=0.7469827645", nil)
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+			return
+		}
+
+	})
+
+}
+
+func TestSendMessages(t *testing.T) {
+
+	dbPath := Setup(t)
+	setupMessages(t)
+
+	//nolint:errcheck
+	defer os.Remove(dbPath)
+
+	r := InitServer()
+
+	t.Run("sends a message from one user to another", func(t *testing.T) {
+
+		body := `{"sender":1,"receiver":2,"content":"test message"}`
+
+		request := httptest.NewRequest(http.MethodPost, "/users/{ID}/messages", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("got %d, want %d", w.Code, http.StatusOK)
+		}
+
+	})
+
+	t.Run("sends an empty message from one user to another", func(t *testing.T) {
+
+		body := `{"sender":1,"receiver":2,"content":""}`
+
+		request := httptest.NewRequest(http.MethodPost, "/users/{ID}/messages", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+		}
+	})
+
+	t.Run("client sends data that does match the UserMessage struct", func(t *testing.T) {
+
+		body := `{"sender":"Hellaur I am the sender","receiver":2,"content":"suhh dude"}`
+
+		request := httptest.NewRequest(http.MethodPost, "/users/{ID}/messages", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, request)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("got %d, want %d", w.Code, http.StatusBadRequest)
+		}
 	})
 
 }
