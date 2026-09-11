@@ -92,6 +92,11 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = db.DeleteUser(user_id)
+
+	if err == db.ErrUserNotFound {
+		http.Error(w, "no user found with given id", http.StatusNotFound)
+	}
+
 	if err != nil {
 		http.Error(w, "issue deleting user", http.StatusInternalServerError)
 		fmt.Println(err)

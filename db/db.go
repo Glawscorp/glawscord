@@ -2,10 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "modernc.org/sqlite"
 )
 
+// queries
 var createUsersTableQuery = `
 CREATE TABLE IF NOT EXISTS users (
 	id INTEGER PRIMARY KEY, 
@@ -46,6 +48,9 @@ var getUserByID = `
 SELECT * FROM users WHERE id = ?
 `
 var dbPath string
+
+// custom errors
+var ErrUserNotFound = errors.New("user not found with given id")
 
 func InitDB(path string) error {
 	dbPath = path
@@ -173,11 +178,14 @@ func DeleteUser(id int) error {
 
 	db := GetDB()
 
-	_, err := GetUserByID(id)
+	user, err := GetUserByID(id)
 
 	if err != nil {
-		fmt.Println("no user found with the given id")
 		return err
+	}
+
+	if user == nil {
+		return ErrUserNotFound
 	}
 
 	_, err = db.Exec(deleteUser, id)
