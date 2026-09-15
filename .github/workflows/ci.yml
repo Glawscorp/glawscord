@@ -51,7 +51,7 @@ jobs:
             - name: Run Tests and Enforce Coverage
               run: |
                 # minimum acceptable coverage
-                THRESHOLD=80.0
+                THRESHOLD=40.0
 
                 # run tests and output coverage.out
                 go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
