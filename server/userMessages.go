@@ -25,7 +25,6 @@ func sendUserMessage(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&m)
 
 	if err != nil {
-		fmt.Fprintln(w, err)
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
