@@ -18,3 +18,10 @@ type UserMessage struct {
 	SentAt   time.Time `json:"sent_at"`
 	Content  string    `json:"content"`
 }
+
+type Server struct {
+	ID        int       `json:"id" db:"id"`
+	Name      string    `json:"name" db:"name"`
+	OwnerID   int       `json:"owner_id" db:"owner_id"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+}

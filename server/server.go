@@ -9,6 +9,7 @@ func InitServer() *chi.Mux {
 
 	userRoutes(r)
 	userMessageRoutes(r)
+	serverRoutes(r)
 
 	return r
 }

@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS user_messages (
 	content TEXT
 )`
 
+var createServersTableQuery = `
+CREATE TABLE IF NOT EXISTS servers (
+	id INTEGER PRIMARY KEY,
+	name TEXT,
+	owner_id INT,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`
+
 var createUserMessage = `
 INSERT INTO user_messages (
 	sender,
@@ -32,6 +40,15 @@ INSERT INTO user_messages (
 	content
 ) VALUES (
 	?,
+	?,
+	?
+)`
+
+var createServer = `
+INSERT INTO servers (
+	name,
+	owner_id
+) VALUES (
 	?,
 	?
 )`
@@ -47,6 +64,7 @@ DELETE FROM users WHERE id = ?
 var getUserByID = `
 SELECT * FROM users WHERE id = ?
 `
+
 var dbPath string
 
 // custom errors
@@ -63,7 +81,6 @@ func InitDB(path string) error {
 	}()
 
 	_, err := db.Exec(createUsersTableQuery)
-
 	if err != nil {
 		fmt.Printf("issue creating users table: %v\n", err)
 	}
@@ -73,7 +90,11 @@ func InitDB(path string) error {
 	}
 
 	_, err = db.Exec(createUserMessagesTableQuery)
+	if err != nil {
+		panic(err)
+	}
 
+	_, err = db.Exec(createServersTableQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -211,4 +232,20 @@ func GetUserByID(id int) (*User, error) {
 	}
 	return &u, nil
 
+}
+
+func CreateServer(name string, owner_id int) error {
+
+	db := GetDB()
+
+	//nolint:errcheck
+	defer db.Close()
+
+	_, err := db.Exec(createServer, name, owner_id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
