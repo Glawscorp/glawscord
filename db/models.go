@@ -25,3 +25,12 @@ type Server struct {
 	OwnerID   int       `json:"owner_id" db:"owner_id"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
+
+type ServerMessage struct {
+	ID       int `json:"id" db:"id"`
+	ServerID int `json:"server_id" db:"sender_id"`
+	Sender   int `json:"sender" db:"sender"`
+	//ChannelID
+	Content string    `json:"content" db:"content"`
+	SentAt  time.Time `json:"sent_at" db:"sent_at"`
+}

@@ -33,6 +33,15 @@ CREATE TABLE IF NOT EXISTS servers (
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )`
 
+var createServerMessagesTableQuery = `
+CREATE TABLE IF NOT EXISTS server_messages (
+	id INTEGER PRIMARY KEY,
+	server_id INT,
+	sender_id INT,
+	content TEXT,
+	sent_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`
+
 var createUserMessage = `
 INSERT INTO user_messages (
 	sender,
@@ -49,6 +58,18 @@ INSERT INTO servers (
 	name,
 	owner_id
 ) VALUES (
+	?,
+	?
+)`
+
+var createServerMessage = `
+INSERT INTO server_messages (
+	server_id,
+	sender_id,
+	content
+
+) VALUES (
+	?,
 	?,
 	?
 )`
@@ -95,6 +116,11 @@ func InitDB(path string) error {
 	}
 
 	_, err = db.Exec(createServersTableQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Exec(createServerMessagesTableQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -248,4 +274,21 @@ func CreateServer(name string, owner_id int) error {
 	}
 
 	return nil
+}
+
+func CreateServerMessage(server_id int, sender_id int, content string) error {
+
+	db := GetDB()
+
+	//nolint:errcheck
+	defer db.Close()
+
+	_, err := db.Exec(createServerMessage, server_id, sender_id, content)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
